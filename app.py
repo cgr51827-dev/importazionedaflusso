@@ -1,12 +1,13 @@
 import streamlit as st
 import pandas as pd
 import io
+import zipfile
 
 st.title("Compilatore BCC")
 
 uploaded_file = st.file_uploader("Carica file flusso", type=["xlsx", "xlsm"])
 
-# funzione universale per colonne Excel (A, J, AF, BA, ecc.)
+# funzione per leggere colonne Excel (A, J, AF, BA ecc.)
 def col(df, lettera):
     idx = 0
     for c in lettera:
@@ -116,19 +117,31 @@ if uploaded_file:
         return out
 
     # =========================
-    # CREAZIONE FILE EXCEL
+    # GENERAZIONE ZIP
     # =========================
-    def crea_excel(df_out):
-        buffer = io.BytesIO()
-        df_out.to_excel(buffer, index=False)
-        return buffer.getvalue()
-
-    if st.button("Genera file"):
+    if st.button("Genera e scarica tutto"):
         st.success("File pronti!")
 
-        st.download_button("IMPORT STANDARD", crea_excel(genera_import_standard(df)), "import_standard.xlsx")
-        st.download_button("RECAPITI TELEFONICI", crea_excel(recapiti(df)), "recapiti.xlsx")
-        st.download_button("SALDO", crea_excel(genera_saldo(df)), "saldo.xlsx")
-        st.download_button("ALTRI DATI", crea_excel(genera_altri_dati(df)), "altri_dati.xlsx")
-        st.download_button("MAIL CLIENTI", crea_excel(mail_clienti(df)), "mail_clienti.xlsx")
-        st.download_button("MAIL BANCHE", crea_excel(mail_banche(df)), "mail_banche.xlsx")
+        files = {
+            "import_standard.xlsx": genera_import_standard(df),
+            "recapiti.xlsx": recapiti(df),
+            "saldo.xlsx": genera_saldo(df),
+            "altri_dati.xlsx": genera_altri_dati(df),
+            "mail_clienti.xlsx": mail_clienti(df),
+            "mail_banche.xlsx": mail_banche(df),
+        }
+
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, "w") as z:
+            for nome, dataframe in files.items():
+                excel_buffer = io.BytesIO()
+                dataframe.to_excel(excel_buffer, index=False)
+                z.writestr(nome, excel_buffer.getvalue())
+
+        st.download_button(
+            label="Scarica TUTTI i file (ZIP)",
+            data=zip_buffer.getvalue(),
+            file_name="compilatore_bcc.zip",
+            mime="application/zip"
+        )
