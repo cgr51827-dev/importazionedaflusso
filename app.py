@@ -11,10 +11,11 @@ if uploaded_file:
 
     st.success("File caricato!")
 
-    # funzione per prendere colonna per LETTERA Excel
-    def col(df, lettera):
-        idx = ord(lettera) - ord('A')
-        return df.iloc[:, idx]
+def col(df, lettera):
+    idx = 0
+    for c in lettera:
+        idx = idx * 26 + (ord(c.upper()) - ord('A') + 1)
+    return df.iloc[:, idx - 1]
 
     # =========================
     # IMPORT STANDARD
