@@ -11,21 +11,26 @@ if uploaded_file:
 
     st.success("File caricato!")
 
+    # funzione per prendere colonna per LETTERA Excel
+    def col(df, lettera):
+        idx = ord(lettera) - ord('A')
+        return df.iloc[:, idx]
+
     # =========================
     # IMPORT STANDARD
     # =========================
     def genera_import_standard(df):
         out = pd.DataFrame()
-        out["A"] = df["J"]
-        out["D"] = df["Q"]
-        out["J"] = df["K"]
-        out["K"] = df["N"]
-        out["L"] = df["L"]
-        out["M"] = df["M"]
-        out["N"] = df["AF"]
-        out["Q"] = df["AJ"]
-        out["R"] = df["AN"]
-        out["U"] = df["E"]
+        out["A"] = col(df, "J")
+        out["D"] = col(df, "Q")
+        out["J"] = col(df, "K")
+        out["K"] = col(df, "N")
+        out["L"] = col(df, "L")
+        out["M"] = col(df, "M")
+        out["N"] = col(df, "AF")
+        out["Q"] = col(df, "AJ")
+        out["R"] = col(df, "AN")
+        out["U"] = col(df, "E")
         return out
 
     # =========================
@@ -33,53 +38,54 @@ if uploaded_file:
     # =========================
     def genera_saldo(df):
         out = pd.DataFrame()
-        out["B"] = df["E"]
-        out["C"] = pd.to_numeric(df["AB"], errors="coerce")
+        out["B"] = col(df, "E")
+        out["C"] = pd.to_numeric(col(df, "AB"), errors="coerce")
         return out
 
     # =========================
-    # ALTRI DATI (zeri iniziali)
+    # ALTRI DATI
     # =========================
     def genera_altri_dati(df):
         out = pd.DataFrame()
-        out["A"] = df["E"].astype(str)
-        out["B"] = df["IP"].astype(str)
-        out["C"] = df["IM"].astype(str)
-        out["D"] = df["IR"].astype(str)
-        out["E"] = df["IN"].astype(str)
-        out["F"] = df["IO"].astype(str)
+        out["A"] = col(df, "E").astype(str)
+        out["B"] = col(df, "IP").astype(str)
+        out["C"] = col(df, "IM").astype(str)
+        out["D"] = col(df, "IR").astype(str)
+        out["E"] = col(df, "IN").astype(str)
+        out["F"] = col(df, "IO").astype(str)
         return out
 
     # =========================
-    # RECAPITI TELEFONICI (H:R)
+    # RECAPITI TELEFONICI
     # =========================
     def recapiti(df):
         colonne = ["R","S","T","BA","BB","BS","BT","BU","BC"]
 
+        def get_col(df, name):
+            idx = sum([(ord(c)-64)*(26**i) for i,c in enumerate(reversed(name))]) - 1
+            return df.iloc[:, idx]
+
         righe = []
 
-        for _, row in df.iterrows():
+        for i in range(len(df)):
             valori = []
 
-            for col in colonne:
-                val = str(row.get(col, "")).strip()
+            for c in colonne:
+                val = str(get_col(df, c).iloc[i]).strip()
                 if val and val != "nan":
                     valori.append(val)
 
-            # compattazione
             while len(valori) < 11:
                 valori.append("")
 
-            nuova_riga = {
-                "B": str(row["E"]),
-            }
+            nuova = {"B": str(col(df,"E").iloc[i])}
 
-            colonne_output = list("HIJKLMNOPQR")
+            colonne_out = list("HIJKLMNOPQR")
 
-            for i, col in enumerate(colonne_output):
-                nuova_riga[col] = valori[i]
+            for j, c in enumerate(colonne_out):
+                nuova[c] = valori[j]
 
-            righe.append(nuova_riga)
+            righe.append(nuova)
 
         return pd.DataFrame(righe)
 
@@ -88,13 +94,13 @@ if uploaded_file:
     # =========================
     def mail_clienti(df):
         out = pd.DataFrame()
-        out["A"] = df["E"]
-        out["B"] = df["J"]
-        out["C"] = df["AP"]
-        out["D"] = df["GN"]
-        out["E"] = df["GO"]
-        out["F"] = df["IN"]
-        out["G"] = df["IO"]
+        out["A"] = col(df,"E")
+        out["B"] = col(df,"J")
+        out["C"] = col(df,"AP")
+        out["D"] = col(df,"GN")
+        out["E"] = col(df,"GO")
+        out["F"] = col(df,"IN")
+        out["G"] = col(df,"IO")
         return out
 
     # =========================
@@ -102,12 +108,12 @@ if uploaded_file:
     # =========================
     def mail_banche(df):
         out = pd.DataFrame()
-        out["A"] = df["E"]
-        out["B"] = df["J"]
-        out["C"] = df["AP"]
-        out["D"] = df["GN"]
-        out["E"] = df["GO"]
-        out["F"] = df["IR"]
+        out["A"] = col(df,"E")
+        out["B"] = col(df,"J")
+        out["C"] = col(df,"AP")
+        out["D"] = col(df,"GN")
+        out["E"] = col(df,"GO")
+        out["F"] = col(df,"IR")
         return out
 
     def crea_excel(df_out):
@@ -118,38 +124,9 @@ if uploaded_file:
     if st.button("Genera file"):
         st.success("File pronti!")
 
-        st.download_button(
-            "Scarica IMPORT STANDARD",
-            crea_excel(genera_import_standard(df)),
-            "import_standard.xlsx"
-        )
-
-        st.download_button(
-            "Scarica RECAPITI TELEFONICI",
-            crea_excel(recapiti(df)),
-            "recapiti.xlsx"
-        )
-
-        st.download_button(
-            "Scarica SALDO",
-            crea_excel(genera_saldo(df)),
-            "saldo.xlsx"
-        )
-
-        st.download_button(
-            "Scarica ALTRI DATI",
-            crea_excel(genera_altri_dati(df)),
-            "altri_dati.xlsx"
-        )
-
-        st.download_button(
-            "Scarica MAIL CLIENTI",
-            crea_excel(mail_clienti(df)),
-            "mail_clienti.xlsx"
-        )
-
-        st.download_button(
-            "Scarica MAIL BANCHE",
-            crea_excel(mail_banche(df)),
-            "mail_banche.xlsx"
-        )
+        st.download_button("IMPORT STANDARD", crea_excel(genera_import_standard(df)), "import.xlsx")
+        st.download_button("RECAPITI", crea_excel(recapiti(df)), "recapiti.xlsx")
+        st.download_button("SALDO", crea_excel(genera_saldo(df)), "saldo.xlsx")
+        st.download_button("ALTRI DATI", crea_excel(genera_altri_dati(df)), "altri.xlsx")
+        st.download_button("MAIL CLIENTI", crea_excel(mail_clienti(df)), "mail_clienti.xlsx")
+        st.download_button("MAIL BANCHE", crea_excel(mail_banche(df)), "mail_banche.xlsx")
